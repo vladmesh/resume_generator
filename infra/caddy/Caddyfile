@@ -1,0 +1,14 @@
+# Port 80 exposes the public HTTP entrypoint for the Resume Generator stack.
+:80 {
+    encode gzip
+
+    # Route /api requests to the FastAPI backend via the internal `backend` service network.
+    handle_path /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Default response for sanity/health probes reaching the edge proxy.
+    handle {
+        respond "Resume Generator edge is running" 200
+    }
+}

@@ -1,0 +1,16 @@
+# Global Docker ignore rules
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.git
+.gitignore
+.pytest_cache/
+.ruff_cache/
+.venv/
+.env
+*.log
