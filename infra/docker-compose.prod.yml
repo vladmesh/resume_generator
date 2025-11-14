@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: resume
+      POSTGRES_USER: resume
+      POSTGRES_PASSWORD: resume
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    # Attach the database to the internal-only production network.
+    networks:
+      - internal
+
+  backend:
+    build:
+      context: ..
+      dockerfile: apps/backend/Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql+asyncpg://resume:resume@postgres:5432/resume
+    env_file:
+      - ../.env.prod
+    # Attach the backend to the internal-only production network.
+    networks:
+      - internal
+
+  bot:
+    build:
+      context: ..
+      dockerfile: apps/bot/Dockerfile
+    depends_on:
+      - backend
+    env_file:
+      - ../.env.prod
+    # Attach the bot to the internal-only production network.
+    networks:
+      - internal
+
+  caddy:
+    build:
+      context: ..
+      dockerfile: infra/caddy/Dockerfile
+    depends_on:
+      - backend
+    # Expose only the edge proxy to the outside world on HTTP port 80.
+    ports:
+      - "80:80"
+    # Allow the proxy to speak both to the host (edge) network and the internal application network.
+    networks:
+      - edge
+      - internal
+
+volumes:
+  postgres_data_prod:
+    driver: local
+
+networks:
+  # Public edge network that only the Caddy proxy joins.
+  edge:
+    driver: bridge
+
+  # Private application network that keeps backend/bot/postgres isolated.
+  internal:
+    driver: bridge

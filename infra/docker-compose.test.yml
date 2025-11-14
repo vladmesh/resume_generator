@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: resume_test
+      POSTGRES_USER: resume
+      POSTGRES_PASSWORD: resume
+    volumes:
+      - postgres_data_test:/var/lib/postgresql/data
+    # Attach the test database to the isolated test network.
+    networks:
+      - resume_test
+
+  backend:
+    build:
+      context: ..
+      dockerfile: apps/backend/Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql+asyncpg://resume:resume@postgres:5432/resume_test
+    env_file:
+      - ../.env.test
+    # Attach the backend to the isolated test network.
+    networks:
+      - resume_test
+
+  bot:
+    build:
+      context: ..
+      dockerfile: apps/bot/Dockerfile
+    depends_on:
+      - backend
+    env_file:
+      - ../.env.test
+    # Attach the bot to the isolated test network.
+    networks:
+      - resume_test
+
+  pytest:
+    image: python:3.11-slim
+    working_dir: /workspace
+    depends_on:
+      - backend
+      - bot
+    env_file:
+      - ../.env.test
+    environment:
+      DATABASE_URL: postgresql+asyncpg://resume:resume@postgres:5432/resume_test
+    volumes:
+      - ../:/workspace
+    command: >-
+      /bin/sh -c "pip install --upgrade pip && pip install -e .[dev] && pytest"
+    # Attach the pytest runner to the isolated test network for service connectivity.
+    networks:
+      - resume_test
+
+volumes:
+  postgres_data_test:
+    driver: local
+
+networks:
+  # Dedicated network that keeps the test stack off the host interfaces.
+  resume_test:
+    driver: bridge

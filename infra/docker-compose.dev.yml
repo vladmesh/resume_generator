@@ -1,0 +1,85 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: resume_dev
+      POSTGRES_USER: resume
+      POSTGRES_PASSWORD: resume
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    # Expose the PostgreSQL port so local tools (e.g. psql) can connect directly.
+    ports:
+      - "5432:5432"
+    # Attach the database to the shared development bridge network.
+    networks:
+      - resume_dev
+
+  backend:
+    build:
+      context: ..
+      dockerfile: apps/backend/Dockerfile
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql+asyncpg://resume:resume@postgres:5432/resume_dev
+    env_file:
+      - ../.env.dev
+    volumes:
+      - ../:/app
+    # Expose the FastAPI service port for direct local testing.
+    ports:
+      - "8000:8000"
+    # Attach the backend to the shared development bridge network.
+    networks:
+      - resume_dev
+
+  bot:
+    build:
+      context: ..
+      dockerfile: apps/bot/Dockerfile
+    depends_on:
+      - backend
+    env_file:
+      - ../.env.dev
+    volumes:
+      - ../:/app
+    # Expose the bot debugging port so it can receive local webhook callbacks if needed.
+    ports:
+      - "8081:8081"
+    # Attach the bot to the shared development bridge network.
+    networks:
+      - resume_dev
+
+  caddy:
+    build:
+      context: ..
+      dockerfile: infra/caddy/Dockerfile
+    depends_on:
+      - backend
+    # Expose the Caddy edge proxy publicly on port 8080 for development traffic.
+    ports:
+      - "8080:80"
+    # Attach Caddy to the shared development bridge network so it can route to backend/bot.
+    networks:
+      - resume_dev
+
+  ruff:
+    image: ghcr.io/astral-sh/ruff:latest
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+    command: ["ruff", "check", "."]
+    # Attach the lint container to the shared development bridge network for parity.
+    networks:
+      - resume_dev
+
+volumes:
+  postgres_data_dev:
+    driver: local
+
+# Shared development bridge network for all containers.
+networks:
+  resume_dev:
+    driver: bridge
