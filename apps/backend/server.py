@@ -2,7 +2,6 @@
 
 from fastapi import FastAPI
 
-
 app = FastAPI(title="Resume Generator API")
 
 
