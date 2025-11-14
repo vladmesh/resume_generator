@@ -40,6 +40,17 @@ Each service exposes health endpoints (`/health` for the backend and the bot's i
 5. Start the bot in another terminal: `python -m apps.bot.bot`.
 6. Execute tests: `pytest`.
 
+## Git hooks
+The repository ships with a `hooks/pre-push` script that mirrors the CI gates by running `ruff check .` and `pytest`. Install or update it locally with one of the following commands:
+
+```bash
+cp hooks/pre-push .git/hooks/pre-push
+# or create a symlink so updates are picked up automatically
+ln -sf ../../hooks/pre-push .git/hooks/pre-push
+```
+
+The hook must be executable (`chmod +x hooks/pre-push`) and will block pushes until both commands succeed.
+
 ## Production runbook
 Until full IaC is added, you can launch the services manually:
 ```bash

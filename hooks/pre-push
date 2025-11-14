@@ -1,0 +1,13 @@
+#!/bin/sh
+set -euo pipefail
+
+# Run Ruff to ensure linting rules pass before pushing
+if ! command -v ruff >/dev/null 2>&1; then
+    echo "ruff is not installed. Install it with 'pip install ruff'" >&2
+    exit 1
+fi
+
+ruff check .
+
+# Run pytest to ensure tests pass before pushing
+pytest

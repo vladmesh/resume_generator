@@ -1,0 +1,11 @@
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+    "infra/",
+]
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[lint.isort]
+known-first-party = ["apps", "infra", "scripts", "tests"]
